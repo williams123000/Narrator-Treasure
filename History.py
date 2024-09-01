@@ -30,6 +30,17 @@ logging.basicConfig(
 logging.info("Inicio de la ejecución del programa History.py")
 logging.info("Programa escrito por Williams Chan Pescador")
 
+# Crear un objeto ArgumentParser para manejar los argumentos de la línea de comandos
+parser = argparse.ArgumentParser(description="Descripción de tu programa")
+
+# Agregar los argumentos que se pueden pasar al programa
+parser.add_argument('-Voice', type=int, help='Funcionamiento de voz', required=True)
+parser.add_argument('-IA', type=int, help='Funcionamiento con IA', required=True)
+
+args = parser.parse_args() # Parsear los argumentos
+ModeVoice = args.Voice # Obtener el valor del argumento Voice (Para activar o desactivar la voz del narrador)
+ModeIA = args.IA # Obtener el valor del argumento IA (Para activar o desactivar la mejora de la historia con IA)
+
 
 colorama.init() # Inicializa colorama para darle color al texto
 
@@ -504,7 +515,7 @@ def GoalASeekerDecidesToGoInSearchOfATreasure():
         global Seeker
         global Crush
         print(colorama.Fore.LIGHTCYAN_EX + "Un buscador decide ir en busca de un tesoro" + colorama.Style.RESET_ALL)
-        print(colorama.Fore.LIGHTCYAN_EX + "=========================================" + colorama.Style.RESET_ALL)
+        
         print("\n")
         TextSeeker = f"The {Seeker.Name} was in the {Seeker.Location} with one main motive which was, {Seeker.ObjectOfEmotion}."
         saveFileHistory(TextSeeker)
@@ -571,11 +582,92 @@ def read_file(file_path):
     return content
 
 file_content = read_file("History.txt") # Lee el contenido del archivo History.txt
-print(colorama.Fore.MAGENTA + "\n Historia en Ingles: ")
-print(file_content ) # Imprime el contenido del archivo History.txt
+#print(colorama.Fore.MAGENTA + "\n Historia en Ingles: ")
+#print(file_content ) # Imprime el contenido del archivo History.txt
 logging.info("Texto de la historia en Ingles " + file_content)
 
 Text_Translate = translate_text(file_content) # Traduce el contenido del archivo History.txt al español
-print(colorama.Fore.GREEN + "\n Historia en Español:")
-print(Text_Translate) # Imprime la traducción de la historia
+#print(colorama.Fore.GREEN + "\n Historia en Español:")
+#print(Text_Translate) # Imprime la traducción de la historia
 logging.info("Texto de la historia en Español " + Text_Translate)
+
+
+
+# Función para mejorar la historia con IA usando la API de Llama3
+def UpgradeIA(Text):
+
+        # URL del servidor de LM Studio
+    url = "http://localhost:1234/v1/chat/completions"
+
+    # Encabezados de la solicitud
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    Text_History = "Mejora el siguiente texto manteniendo la historia intacta, pero optimizando la fluidez para evitar la repetición innecesaria de personajes. Reemplaza o reformula oraciones para que los personajes no se mencionen tantas veces seguidas, sin agregar nuevos elementos ni alterar el contenido original es decir no alterar la historia, tampoco pierdas el contexto y su idea IMPORTANTE: SOLO DAME LA NUEVA HISTORIA, NO AGREGUES NADA MÁS: " + Text 
+
+    # Cuerpo de la solicitud
+    data = {
+        "model": "lmstudio-community/gemma-2-2b-it-GGUF/gemma-2-2b-it-Q4_K_M.gguf",
+        "messages": [
+            {"role": "system", "content": "Eres un mejorador de historias."},
+            {"role": "user", "content": Text_History},
+        ],
+        "temperature": 0.7,
+        "max_tokens": -1,
+        "stream": False
+    }
+
+    # Realizar la solicitud POST
+    response = requests.post(url, headers=headers, json=data)
+
+    # Mostrar el resultado
+    if response.status_code == 200:
+        completion = response.json()
+        return completion['choices'][0]['message']['content']
+    else:
+        print(f"Error: {response.status_code}")
+        return "Error"
+
+
+##print(response.json())
+
+
+NewHistory = Text_Translate # Guarda la historia traducida al español en una nueva variable NewHistory
+
+
+#print(statusGoalHeroDecideRescueHostage) # Imprime el estado de la meta conductora
+
+# Imprime los modos de funcionamiento de la IA y la voz del narrador
+if ModeIA == 1: # Si el modo de IA está activado
+    
+    logging.info("Modo de IA encendida")
+    NewHistory = UpgradeIA(NewHistory)
+    #print(colorama.Fore.CYAN + "\n Historia Mejorada: ")
+    #print(colorama.Fore.CYAN + "\n Historia Mejorada: " + NewHistory) # Imprime la historia mejorada
+    #print(NewHistory)
+    logging.info("Texto de la historia mejorada " + NewHistory)
+
+else:
+    #print("\nModo de IA apagada")
+    logging.info("Modo de IA apagada")
+    #print("\nTexto de la historia: ")
+    #print(NewHistory)
+    #logging.info("Texto de la historia " + NewHistory)
+
+if ModeVoice == 1: # Si el modo de voz está activado
+    logging.info("Modo de voz encendida")
+    #print("\nModo de voz encendida")
+    #VoiceText(NewHistory)
+    #print(colorama.Fore.CYAN + "\nTexto de la historia: ")
+    print(NewHistory)
+    logging.info("Texto de la historia " + NewHistory)
+
+else:
+    #print("\nModo de voz apagada")
+    logging.info("Modo de voz apagada")
+    #print("\nTexto de la historia: ")
+    print(NewHistory)
+
+
+
